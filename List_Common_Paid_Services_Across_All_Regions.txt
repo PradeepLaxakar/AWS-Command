@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Get all AWS regions
+regions=$(aws ec2 describe-regions --query "Regions[].RegionName" --output text)
+
+# Loop through each region and list only chargeable resources
+for region in $regions; do
+  echo "=============================="
+  echo "Checking region: $region"
+  echo "=============================="
+
+  echo "EC2 Instances:"
+  aws ec2 describe-instances --region $region --query "Reservations[*].Instances[*].InstanceId" --output text || echo "None"
+
+  echo "RDS Instances:"
+  aws rds describe-db-instances --region $region --query "DBInstances[*].DBInstanceIdentifier" --output text || echo "None"
+
+  echo "Lambda Functions:"
+  aws lambda list-functions --region $region --query "Functions[?ProvisionedConcurrencyConfig].FunctionName" --output text || echo "None"
+
+  echo "ECS Clusters:"
+  aws ecs list-clusters --region $region --query "clusterArns" --output text || echo "None"
+
+  echo "EKS Clusters:"
+  aws eks list-clusters --region $region --query "clusters" --output text || echo "None"
+
+  echo "Load Balancers:"
+  aws elbv2 describe-load-balancers --region $region --query "LoadBalancers[*].LoadBalancerName" --output text || echo "None"
+
+  echo "Elastic IPs:"
+  aws ec2 describe-addresses --region $region --query "Addresses[*].PublicIp" --output text || echo "None"
+
+  echo "CloudFormation Stacks:"
+  aws cloudformation list-stacks --region $region --query "StackSummaries[*].StackName" --output text || echo "None"
+
+  echo "SNS Topics:"
+  aws sns list-topics --region $region --query "Topics[*].TopicArn" --output text || echo "None"
+
+  echo "SQS Queues:"
+  aws sqs list-queues --region $region --query "QueueUrls" --output text || echo "None"
+
+  echo "EBS Volumes:"
+  aws ec2 describe-volumes --region $region --query "Volumes[*].VolumeId" --output text || echo "None"
+
+  echo "------------------------------"
+done
+
+# Global Chargeable Services
+echo "=============================="
+echo "S3 Buckets:"
+aws s3 ls || echo "None"
+echo "=============================="
